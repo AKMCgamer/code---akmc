@@ -1,54 +1,15 @@
 #!/bin/bash
-# Made by AKMC
 
-# AKMC ASCII Art with Gradient
-echo -e "\n\033[1;36m"
-cat << "EOF"
+# Create a new directory for pterodactyl
+mkdir pterodactyl
+cd pterodactyl
 
- █████  ██   ██ ███    ███  ██████ 
-██   ██ ██  ██  ████  ████ ██      
-███████ █████   ██ ████ ██ ██      
-██   ██ ██  ██  ██  ██  ██ ██      
-██   ██ ██   ██ ██      ██  ██████ 
-                                   
-                                                              
- 🤍 Pterodactyl Installer - github.com/AKMC
+# Create panel directory
+mkdir panel
+cd panel
 
-EOF
-echo -e "\033[0m"
-
-# Initialize progress tracking
-total_steps=5
-current_step=0
-
-# Function to show progress
-show_progress() {
-    current_step=$((current_step + 1))
-    percentage=$((current_step * 100 / total_steps))
-    
-    # Progress bar
-    bar_length=30
-    filled=$((bar_length * current_step / total_steps))
-    bar=$(printf "%${filled}s" | tr ' ' '■')
-    empty=$(printf "%$((bar_length - filled))s" | tr ' ' '□')
-    
-    # Time display
-    mins=$(( (total_steps - current_step) * 2 ))  # Estimated 2 mins per step
-    
-    printf "\r\033[1;34mProgress: [%s%s] %d%% | Step %d/%d | ETA: %02d min \033[0m" \
-        "$bar" "$empty" "$percentage" "$current_step" "$total_steps" "$mins"
-}
-
-# Step 1: Create directory structure
-show_progress
-echo -e "\n\033[1;35m📂 Creating directory structure...\033[0m"
-mkdir -p pterodactyl/panel
-cd pterodactyl/panel || exit
-
-# Step 2: Create docker-compose.yml file
-show_progress
-echo -e "\n\033[1;35m📝 Generating docker-compose.yml...\033[0m"
-cat <<EOF > docker-compose.yml
+# Create docker-compose.yml file with the specified content
+cat > docker-compose.yml << 'EOF'
 version: '3.8'
 
 x-common:
@@ -62,6 +23,7 @@ x-common:
     APP_TIMEZONE: "UTC"
     APP_SERVICE_AUTHOR: "noreply@example.com"
     TRUSTED_PROXIES: "*"
+    # LE_EMAIL: ""
   mail:
     &mail-environment
     MAIL_FROM: "noreply@example.com"
@@ -78,7 +40,7 @@ services:
     restart: always
     command: --default-authentication-plugin=mysql_native_password
     volumes:
-      - "/srv/pterodactyl/database:/var/lib/mysql"
+      - "./data/database:/var/lib/mysql"
     environment:
       <<: *db-environment
       MYSQL_DATABASE: "panel"
@@ -92,16 +54,16 @@ services:
     image: ghcr.io/pterodactyl/panel:latest
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "8030:80"
+      - "4433:443"
     links:
       - database
       - cache
     volumes:
-      - "/srv/pterodactyl/var/:/app/var/"
-      - "/srv/pterodactyl/nginx/:/etc/nginx/http.d/"
-      - "/srv/pterodactyl/certs/:/etc/letsencrypt/"
-      - "/srv/pterodactyl/logs/:/app/storage/logs"
+      - "./data/var:/app/var"
+      - "./data/nginx:/etc/nginx/http.d"
+      - "./data/certs:/etc/letsencrypt"
+      - "./data/logs:/app/storage/logs"
     environment:
       <<: [*panel-environment, *mail-environment]
       DB_PASSWORD: *db-password
@@ -121,20 +83,11 @@ networks:
         - subnet: 172.20.0.0/16
 EOF
 
-# Step 3: Start Docker containers
-show_progress
-echo -e "\n\033[1;35m🐳 Starting Docker containers...\033[0m"
+# Create required directories
+mkdir -p ./data/{database,var,nginx,certs,logs}
+
+# Start the containers
 docker-compose up -d
 
-# Step 4: Create admin user
-show_progress
-echo -e "\n\033[1;35m👑 Creating admin user...\033[0m"
+# Create admin user
 docker-compose run --rm panel php artisan p:user:make
-
-# Final step
-show_progress
-echo -e "\n\n\033[1;32m✅ Pterodactyl Panel installation complete!\033[0m"
-echo -e "\033[1;36m🌐 Access your panel at: \033[1;33mhttp://localhost\033[0m or \033[1;33myour-server-ip\033[0m"
-echo -e "\033[1;36m🔒 Secure access at port 443: \033[1;33mhttps://localhost\033[0m or \033[1;33mhttps://your-server-ip\033[0m"
-echo -e "\n\033[38;5;105m           Made with ❤️ by \033[38;5;99mA\033[38;5;93mK\033[38;5;87mM\033[38;5;81mC\033[0m"
-echo -e "\033[1;35m       github.com/AKMC\033[0m"
