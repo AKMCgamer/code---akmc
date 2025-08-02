@@ -1,14 +1,65 @@
 #!/bin/bash
 
-# Create a new directory for pterodactyl
-mkdir pterodactyl
-cd pterodactyl
+# Hide commands and show progress
+exec > >(tee -i install.log) 2>&1
+set -e
 
-# Create panel directory
-mkdir panel
-cd panel
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-# Create docker-compose.yml file with the specified content
+# ASCII Art
+echo -e "${YELLOW}"
+cat << "EOF"
+   ____           _                _           _   
+ █████  ██   ██ ███    ███  ██████ 
+██   ██ ██  ██  ████  ████ ██      
+███████ █████   ██ ████ ██ ██      
+██   ██ ██  ██  ██  ██  ██ ██      
+██   ██ ██   ██ ██      ██  ██████ 
+                                                                    
+                                   
+EOF
+echo -e "${NC}"
+
+# Total steps
+TOTAL_STEPS=8
+current_step=0
+
+# Progress bar function
+progress_bar() {
+    current_step=$((current_step + 1))
+    percent=$((current_step * 100 / TOTAL_STEPS))
+    printf "\r${BLUE}[${NC}"
+    for ((i=0; i<percent/2; i++)); do
+        printf "▓"
+    done
+    for ((i=percent/2; i<50; i++)); do
+        printf " "
+    done
+    printf "${BLUE}] ${percent}%% ${NC}(${current_step}/${TOTAL_STEPS}) ${GREEN}$1${NC}"
+    echo
+}
+
+# Function to execute commands silently
+execute() {
+    eval "$1" >/dev/null 2>&1
+}
+
+# Start installation
+echo -e "${YELLOW}🚀 Starting Pterodactyl Panel Installation...${NC}"
+echo
+
+# Step 1: Create directories
+progress_bar "Creating directories..."
+execute "mkdir -p pterodactyl/panel"
+execute "cd pterodactyl/panel"
+
+# Step 2: Create docker-compose.yml
+progress_bar "Creating docker-compose.yml..."
 cat > docker-compose.yml << 'EOF'
 version: '3.8'
 
@@ -83,11 +134,38 @@ networks:
         - subnet: 172.20.0.0/16
 EOF
 
-# Create required directories
-mkdir -p ./data/{database,var,nginx,certs,logs}
+# Step 3: Create data directories
+progress_bar "Creating data directories..."
+execute "mkdir -p ./data/{database,var,nginx,certs,logs}"
 
-# Start the containers
-docker-compose up -d
+# Step 4: Pull Docker images
+progress_bar "Pulling Docker images..."
+execute "docker-compose pull"
 
-# Create admin user
+# Step 5: Start containers
+progress_bar "Starting containers..."
+execute "docker-compose up -d"
+
+# Step 6: Wait for containers to initialize
+progress_bar "Waiting for containers to initialize..."
+execute "sleep 30"
+
+# Step 7: Create admin user
+progress_bar "Creating admin user..."
+echo -e "${YELLOW}Please enter admin user details when prompted:${NC}"
 docker-compose run --rm panel php artisan p:user:make
+
+# Step 8: Finalize installation
+progress_bar "Finalizing installation..."
+echo -e "\n${GREEN}✅ Installation Completed Successfully!${NC}"
+
+# Show completion message
+echo -e "\n${YELLOW}=============================================${NC}"
+echo -e "${GREEN}🎉 Pterodactyl Panel is now installed!${NC}"
+echo -e "${YELLOW}=============================================${NC}"
+echo -e "\n${BLUE}Access your panel at: ${YELLOW}http://localhost:8030${NC}"
+echo -e "${BLUE}Panel configuration file: ${YELLOW}pterodactyl/panel/docker-compose.yml${NC}"
+echo -e "\n${RED}⚠️ Remember to:${NC}"
+echo -e "1. Change default passwords in docker-compose.yml"
+echo -e "2. Configure your domain and SSL certificates"
+echo -e "\n${YELLOW}💻 Made with ❤️ by AKMC ${NC}🚀🔥\n"
