@@ -2,12 +2,11 @@
 
 # Display ASCII art
 echo -e "\e[36m
-
  █████  ██   ██ ███    ███  ██████ 
 ██   ██ ██  ██  ████  ████ ██      
 ███████ █████   ██ ████ ██ ██      
 ██   ██ ██  ██  ██  ██  ██ ██      
-██   ██ ██   ██ ██      ██  ██████ 
+██   ██ ██   ██ ██      ██  ██████
 \e[0m"
 
 # Function to display progress bar
@@ -23,18 +22,29 @@ progress_bar() {
     echo
 }
 
-# Clone repository silently
-echo -e "\e[32mStarting installation...\e[0m"
-(git clone https://github.com/orbitplayzz7206/Bro-temp.git > /dev/null 2>&1) &
-
-# Show progress bar while cloning
-progress_bar 5
-
-# Change directory and run start.sh silently
-echo -e "\e[32mConfiguring setup...\e[0m"
-(cd Bro-temp && ./start.sh > /dev/null 2>&1) &
-
-# Show progress bar while running start.sh
-progress_bar 3
-
-echo -e "\e[32mInstallation completed successfully!\e[0m"    
+# Clone repository
+echo -e "\e[32mCloning repository...\e[0m"
+if git clone https://github.com/orbitplayzz7206/Bro-temp.git > /dev/null 2>&1; then
+    progress_bar 2
+    echo -e "\e[32mRepository cloned successfully!\e[0m"
+    
+    # Change directory and run start.sh
+    echo -e "\e[32mEntering directory and starting setup...\e[0m"
+    cd Bro-temp || { echo -e "\e[31mFailed to enter Bro-temp directory!\e[0m"; exit 1; }
+    
+    if [[ -f "start.sh" ]]; then
+        progress_bar 2
+        echo -e "\e[32mStarting the application...\e[0m"
+        bash start.sh
+    else
+        echo -e "\e[31mError: start.sh not found in the repository!\e[0m"
+        exit 1
+    fi
+else
+    echo -e "\e[31mError: Failed to clone repository!\e[0m"
+    echo -e "\e[33mPossible reasons:"
+    echo -e "1. GitHub repository doesn't exist"
+    echo -e "2. No internet connection"
+    echo -e "3. git is not installed\e[0m"
+    exit 1
+fi                               
