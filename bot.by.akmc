@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Display ASCII art
+echo -e "\e[36m
+
+ █████  ██   ██ ███    ███  ██████ 
+██   ██ ██  ██  ████  ████ ██      
+███████ █████   ██ ████ ██ ██      
+██   ██ ██  ██  ██  ██  ██ ██      
+██   ██ ██   ██ ██      ██  ██████ 
+\e[0m"
+
+# Function to display progress bar
+progress_bar() {
+    local duration=${1}
+    local increment=$((100/$duration))
+    for ((i=0; i<=$duration; i++)); do
+        perc=$(( $i * $increment ))
+        bar=$(printf "%0.s=" $(seq 1 $(( $perc / 2 )) ))
+        printf "\r[%-50s] %d%%" "$bar" "$perc"
+        sleep 1
+    done
+    echo
+}
+
+# Clone repository silently
+echo -e "\e[32mStarting installation...\e[0m"
+(git clone https://github.com/orbitplayzz7206/Bro-temp.git > /dev/null 2>&1) &
+
+# Show progress bar while cloning
+progress_bar 5
+
+# Change directory and run start.sh silently
+echo -e "\e[32mConfiguring setup...\e[0m"
+(cd Bro-temp && ./start.sh > /dev/null 2>&1) &
+
+# Show progress bar while running start.sh
+progress_bar 3
+
+echo -e "\e[32mInstallation completed successfully!\e[0m"    
